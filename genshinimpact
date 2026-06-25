@@ -1,1 +1,875 @@
-genshinimoact
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genshin Impact — Web Adventure</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c8a84b;
+    --gold-light: #f0d080;
+    --blue-dark: #0a0f1e;
+    --blue-mid: #111827;
+    --blue-panel: #141c30;
+    --blue-border: #1e2d4a;
+    --white: #e8dfc8;
+    --cyan: #7ecfef;
+    --red: #e05050;
+    --green: #5ec97d;
+    --pyro: #ff6b35;
+    --hydro: #4fc3f7;
+    --electro: #b39ddb;
+    --anemo: #80cbc4;
+    --geo: #ffd54f;
+    --cryo: #b3e5fc;
+    --dendro: #aed581;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--blue-dark);
+    color: var(--white);
+    font-family: 'Lato', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(200,168,75,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(78,195,239,0.05) 0%, transparent 60%);
+  }
+
+  h1, h2, h3 { font-family: 'Cinzel', serif; }
+
+  /* ===== TITLE SCREEN ===== */
+  #title-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; width: 100%; text-align: center; padding: 2rem;
+  }
+  .title-glow {
+    font-size: clamp(2rem, 6vw, 4rem);
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(200,168,75,0.6), 0 0 60px rgba(200,168,75,0.2);
+    letter-spacing: 4px;
+    animation: titlePulse 3s ease-in-out infinite;
+  }
+  @keyframes titlePulse {
+    0%,100% { text-shadow: 0 0 30px rgba(200,168,75,0.6), 0 0 60px rgba(200,168,75,0.2); }
+    50% { text-shadow: 0 0 50px rgba(200,168,75,0.9), 0 0 100px rgba(200,168,75,0.4); }
+  }
+  .title-sub {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem; color: var(--cyan); letter-spacing: 8px;
+    margin: 0.5rem 0 3rem;
+  }
+  .star-line {
+    color: var(--gold); font-size: 1.2rem; margin-bottom: 2rem; letter-spacing: 6px;
+    animation: starSpin 6s linear infinite;
+  }
+  @keyframes starSpin { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+  /* ===== CHARACTER SELECT ===== */
+  #char-select { display: none; padding: 2rem; max-width: 900px; width: 100%; }
+  .char-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .char-card {
+    background: var(--blue-panel);
+    border: 1px solid var(--blue-border);
+    border-radius: 12px; padding: 1.2rem;
+    cursor: pointer; transition: all 0.2s;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .char-card:hover { transform: translateY(-4px); border-color: var(--gold); box-shadow: 0 8px 30px rgba(200,168,75,0.2); }
+  .char-card.selected { border-color: var(--gold); background: rgba(200,168,75,0.1); }
+  .char-icon { font-size: 3rem; display: block; margin-bottom: 0.5rem; }
+  .char-name { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); }
+  .char-element { font-size: 0.8rem; margin-top: 0.3rem; }
+  .char-desc { font-size: 0.75rem; color: #aaa; margin-top: 0.5rem; line-height: 1.4; }
+  .element-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 700; margin-top: 0.3rem;
+  }
+
+  /* ===== MAIN GAME ===== */
+  #game-screen { display: none; width: 100%; max-width: 960px; padding: 1rem; }
+
+  .hud {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; gap: 1rem; padding: 0.8rem 1.2rem;
+    background: var(--blue-panel); border: 1px solid var(--blue-border);
+    border-radius: 12px; margin-bottom: 1rem;
+  }
+  .hud-left { display: flex; flex-direction: column; gap: 4px; }
+  .hud-name { font-family: 'Cinzel', serif; color: var(--gold); font-size: 1rem; }
+  .bar-wrap { display: flex; align-items: center; gap: 6px; }
+  .bar-label { font-size: 0.7rem; color: #aaa; width: 18px; }
+  .bar { height: 8px; border-radius: 4px; background: #1a2340; width: 140px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .hp-fill { background: linear-gradient(90deg, #e05050, #ff8a65); }
+  .en-fill { background: linear-gradient(90deg, #b39ddb, #7c4dff); }
+  .hud-center { font-size: 1.5rem; text-align: center; }
+  .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .mora-count { font-family: 'Cinzel', serif; color: var(--gold); font-size: 0.9rem; }
+  .region-label { font-size: 0.75rem; color: var(--cyan); }
+  .floor-label { font-size: 0.7rem; color: #888; }
+
+  /* Scene */
+  .scene-box {
+    background: var(--blue-panel); border: 1px solid var(--blue-border);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;
+    min-height: 200px; position: relative;
+  }
+  .scene-art {
+    font-size: 3rem; text-align: center; display: block;
+    margin-bottom: 1rem; line-height: 1;
+  }
+  .scene-title {
+    font-family: 'Cinzel', serif; color: var(--gold-light);
+    font-size: 1.1rem; margin-bottom: 0.8rem;
+    border-bottom: 1px solid rgba(200,168,75,0.3); padding-bottom: 0.5rem;
+  }
+  .scene-text { line-height: 1.7; font-size: 0.95rem; color: #c8c0a8; }
+  .scene-text .highlight { color: var(--gold); font-weight: 700; }
+  .scene-text .enemy { color: var(--red); font-weight: 700; }
+  .scene-text .reward { color: var(--green); font-weight: 700; }
+  .scene-text .skill { color: var(--cyan); font-weight: 700; }
+
+  /* Actions */
+  .action-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.6rem; margin-bottom: 1rem;
+  }
+  .btn {
+    background: var(--blue-panel); border: 1px solid var(--blue-border);
+    color: var(--white); padding: 0.7rem 1rem; border-radius: 8px;
+    cursor: pointer; font-family: 'Lato', sans-serif; font-size: 0.85rem;
+    transition: all 0.15s; text-align: left; position: relative; overflow: hidden;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(200,168,75,0.07); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.primary { border-color: var(--gold); background: rgba(200,168,75,0.12); color: var(--gold); }
+  .btn.primary:hover { background: rgba(200,168,75,0.25); }
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .btn.danger:hover { background: rgba(224,80,80,0.1); }
+  .btn.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+  .btn-icon { margin-right: 6px; }
+  .btn-cost { font-size: 0.7rem; color: #b39ddb; display: block; margin-top: 2px; }
+
+  /* Log */
+  .log-box {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--blue-border);
+    border-radius: 8px; padding: 0.8rem 1rem; max-height: 130px; overflow-y: auto;
+    font-size: 0.82rem; line-height: 1.6;
+  }
+  .log-box::-webkit-scrollbar { width: 4px; }
+  .log-box::-webkit-scrollbar-thumb { background: var(--blue-border); border-radius: 2px; }
+  .log-entry { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .log-entry:last-child { color: var(--gold-light); }
+  .log-dmg { color: var(--red); }
+  .log-heal { color: var(--green); }
+  .log-skill { color: var(--cyan); }
+  .log-reward { color: var(--gold); }
+
+  /* Combat */
+  .combat-area {
+    background: rgba(0,0,0,0.2); border: 1px solid rgba(224,80,80,0.2);
+    border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem;
+  }
+  .enemy-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+  .enemy-icon { font-size: 2.5rem; }
+  .enemy-info { flex: 1; }
+  .enemy-name { font-family: 'Cinzel', serif; color: var(--red); font-size: 1rem; }
+  .enemy-hp-bar { height: 10px; background: #1a2340; border-radius: 5px; overflow: hidden; margin-top: 4px; }
+  .enemy-hp-fill { height: 100%; background: linear-gradient(90deg, #e05050, #ff5252); border-radius: 5px; transition: width 0.4s; }
+  .enemy-status { font-size: 0.75rem; color: #aaa; margin-top: 2px; }
+
+  /* Shop */
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.8rem; }
+  .shop-item {
+    background: var(--blue-panel); border: 1px solid var(--blue-border);
+    border-radius: 10px; padding: 1rem; cursor: pointer; transition: all 0.2s;
+  }
+  .shop-item:hover { border-color: var(--gold); }
+  .shop-price { color: var(--gold); font-weight: 700; font-size: 0.9rem; margin-top: 0.4rem; }
+
+  /* Section header */
+  .section-header {
+    font-family: 'Cinzel', serif; color: var(--gold);
+    font-size: 0.8rem; letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-header::after { content: ''; flex: 1; height: 1px; background: var(--blue-border); }
+
+  /* Inventory panel */
+  .inventory-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .inv-item {
+    background: var(--blue-panel); border: 1px solid var(--blue-border);
+    border-radius: 6px; padding: 0.4rem 0.7rem; font-size: 0.8rem;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* Overlays */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; backdrop-filter: blur(4px);
+  }
+  .overlay-box {
+    background: var(--blue-panel); border: 1px solid var(--gold);
+    border-radius: 16px; padding: 2rem; max-width: 400px; width: 90%;
+    text-align: center; box-shadow: 0 0 60px rgba(200,168,75,0.2);
+  }
+  .overlay-icon { font-size: 4rem; display: block; margin-bottom: 1rem; }
+  .overlay-title { font-family: 'Cinzel', serif; font-size: 1.4rem; color: var(--gold); margin-bottom: 0.8rem; }
+  .overlay-text { color: #bbb; line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  .shake { animation: shake 0.3s; }
+  @keyframes floatUp { 0%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-40px)} }
+  .dmg-float {
+    position: fixed; font-family:'Cinzel',serif; font-size:1.4rem; font-weight:700;
+    pointer-events:none; z-index:200; animation: floatUp 0.8s ease forwards;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+
+  /* Responsive */
+  @media(max-width:600px) {
+    .hud { grid-template-columns: 1fr 1fr; }
+    .hud-center { display: none; }
+    .action-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== TITLE SCREEN ===== -->
+<div id="title-screen">
+  <div class="star-line">★ ✦ ★ ✦ ★</div>
+  <h1 class="title-glow">GENSHIN IMPACT</h1>
+  <p class="title-sub">WEB ADVENTURE</p>
+  <p style="color:#aaa;max-width:480px;line-height:1.7;margin-bottom:2rem;font-size:0.95rem;">
+    Traverse the seven nations of Teyvat. Battle slimes, Hillichurls, and ancient bosses.
+    Collect Mora, forge powerful artifacts, and uncover the mysteries of the Archons.
+  </p>
+  <button class="btn primary" onclick="showCharSelect()" style="font-size:1rem;padding:0.9rem 2.5rem;font-family:'Cinzel',serif;letter-spacing:2px;">
+    ✦ BEGIN JOURNEY ✦
+  </button>
+  <p style="color:#555;font-size:0.75rem;margin-top:2rem;">Fan-made text adventure · Not affiliated with miHoYo / HoYoverse</p>
+</div>
+
+<!-- ===== CHARACTER SELECT ===== -->
+<div id="char-select">
+  <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.4rem;text-align:center;margin-bottom:0.5rem;">Choose Your Character</h2>
+  <p style="color:#888;text-align:center;margin-bottom:1.5rem;font-size:0.85rem;">Each traveler commands a unique element and playstyle</p>
+  <div class="char-grid" id="char-grid"></div>
+  <div style="text-align:center;margin-top:1.5rem;">
+    <button class="btn primary" id="start-btn" onclick="startGame()" style="font-family:'Cinzel',serif;letter-spacing:2px;padding:0.8rem 2rem;" disabled>
+      ✦ SET FORTH ✦
+    </button>
+  </div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="game-screen">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-name" id="hud-name">Traveler</div>
+      <div class="bar-wrap"><span class="bar-label">HP</span><div class="bar"><div class="bar-fill hp-fill" id="hp-bar" style="width:100%"></div></div><span id="hp-text" style="font-size:0.7rem;color:#aaa;margin-left:4px"></span></div>
+      <div class="bar-wrap"><span class="bar-label">EN</span><div class="bar"><div class="bar-fill en-fill" id="en-bar" style="width:0%"></div></div><span id="en-text" style="font-size:0.7rem;color:#aaa;margin-left:4px"></span></div>
+    </div>
+    <div class="hud-center" id="hud-element">🌟</div>
+    <div class="hud-right">
+      <div class="mora-count" id="mora-count">💰 0 Mora</div>
+      <div class="region-label" id="region-label">Mondstadt</div>
+      <div class="floor-label" id="floor-label">Area 1</div>
+    </div>
+  </div>
+
+  <!-- Scene -->
+  <div class="scene-box fade-in" id="scene-box">
+    <span class="scene-art" id="scene-art">🌿</span>
+    <div class="scene-title" id="scene-title">Loading...</div>
+    <div class="scene-text" id="scene-text">Your adventure begins...</div>
+  </div>
+
+  <!-- Combat area (hidden when not in combat) -->
+  <div class="combat-area" id="combat-area" style="display:none">
+    <div class="section-header">⚔ Combat</div>
+    <div class="enemy-row">
+      <div class="enemy-icon" id="enemy-icon">👾</div>
+      <div class="enemy-info">
+        <div class="enemy-name" id="enemy-name">Enemy</div>
+        <div class="enemy-hp-bar"><div class="enemy-hp-fill" id="enemy-hp-bar" style="width:100%"></div></div>
+        <div class="enemy-status" id="enemy-status">HP: 100 / 100</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="section-header">Actions</div>
+  <div class="action-grid" id="action-grid"></div>
+
+  <!-- Inventory -->
+  <div class="section-header" style="margin-top:0.8rem;">Inventory</div>
+  <div class="inventory-grid" id="inventory-grid">
+    <div class="inv-item" style="color:#666;">Empty</div>
+  </div>
+
+  <!-- Log -->
+  <div class="section-header" style="margin-top:0.8rem;">⟳ Adventure Log</div>
+  <div class="log-box" id="log-box"></div>
+</div>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay" style="display:none">
+  <div class="overlay-box">
+    <span class="overlay-icon" id="ov-icon">⭐</span>
+    <div class="overlay-title" id="ov-title">Title</div>
+    <div class="overlay-text" id="ov-text">Text</div>
+    <button class="btn primary" id="ov-btn" onclick="overlayAction()">Continue</button>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const CHARACTERS = [
+  { id:'lumine', name:'Lumine', icon:'👧', element:'Anemo', elementColor:'var(--anemo)', badge:'🌀 Anemo', desc:'The Traveler from another world. Wind slashes deal area damage.', hp:100, atk:18, skill:'Gale Slash', skillDesc:'Wind AoE attack', skillCost:30, burst:'Starfell Sword', burstCost:80, special:'wind' },
+  { id:'hu_tao', name:'Hu Tao', icon:'🦋', element:'Pyro', elementColor:'var(--pyro)', badge:'🔥 Pyro', desc:'The 77th Director of the Wangsheng Funeral Parlor. Burns enemies over time.', hp:90, atk:22, skill:'Blood Blossom', skillDesc:'Pyro DoT attack', skillCost:25, burst:'Spirit Soother', burstCost:80, special:'burn' },
+  { id:'ganyu', name:'Ganyu', icon:'🦌', element:'Cryo', elementColor:'var(--cryo)', badge:'❄ Cryo', desc:'Adeptus and emissary of the Liyue Qixing. Charge shots deal massive Cryo DMG.', hp:85, atk:20, skill:'Trail of the Qilin', skillDesc:'Cryo taunt & ice', skillCost:25, burst:'Celestial Shower', burstCost:80, special:'freeze' },
+  { id:'raiden', name:'Raiden Shogun', icon:'⚡', element:'Electro', elementColor:'var(--electro)', badge:'⚡ Electro', desc:'Archon of Inazuma. Electro attacks chain to nearby enemies.', hp:95, atk:19, skill:'Eye of Stormy Judgment', skillDesc:'Electro AoE', skillCost:30, burst:'Musou Shinsetsu', burstCost:90, special:'chain' },
+  { id:'xiao', name:'Xiao', icon:'🎭', element:'Anemo', elementColor:'var(--anemo)', badge:'🌀 Anemo', desc:'Vigilant Yaksha who protects Liyue. Fast plunging attacks with high DPS.', hp:88, atk:24, skill:'Lemniscatic Wind Cycling', skillDesc:'Dash & Anemo strike', skillCost:20, burst:'Bane of All Evil', burstCost:70, special:'plunge' },
+  { id:'fischl', name:'Fischl', icon:'🔮', element:'Electro', elementColor:'var(--electro)', badge:'⚡ Electro', desc:'Investigator of Mondstadt. Oz the Raven attacks alongside her.', hp:80, atk:17, skill:'Nightrider', skillDesc:'Summon Oz', skillCost:20, burst:'Midnight Phantasmagoria', burstCost:60, special:'oz' },
+];
+
+const REGIONS = [
+  { name:'Mondstadt', emoji:'🏔', color:'#4fc3f7' },
+  { name:'Liyue Harbor', emoji:'🏮', color:'#ffd54f' },
+  { name:'Inazuma', emoji:'⛩', color:'#b39ddb' },
+  { name:'Sumeru', emoji:'🌿', color:'#aed581' },
+];
+
+const ENEMIES = [
+  { name:'Slime', icon:'🟢', hp:40, atk:8, mora:60, exp:15, type:'common' },
+  { name:'Hilichurl', icon:'👺', hp:60, atk:12, mora:90, exp:20, type:'common' },
+  { name:'Samachurl', icon:'🧙', hp:50, atk:15, mora:80, exp:18, type:'common', special:'heal' },
+  { name:'Treasure Hoarder', icon:'🗡', hp:75, atk:14, mora:120, exp:25, type:'elite' },
+  { name:'Fatui Skirmisher', icon:'🎭', hp:90, atk:18, mora:150, exp:30, type:'elite', special:'shield' },
+  { name:'Ruin Guard', icon:'🤖', hp:150, atk:25, mora:250, exp:60, type:'boss' },
+  { name:'Abyss Herald', icon:'👁', hp:200, atk:30, mora:400, exp:100, type:'boss', special:'curse' },
+  { name:'Primo Geovishap', icon:'🐉', hp:300, atk:35, mora:600, exp:150, type:'boss' },
+];
+
+const ITEMS = [
+  { id:'food1', name:'Berry', icon:'🍓', effect:'hp', value:20, price:40, desc:'Restores 20 HP' },
+  { id:'food2', name:'Satisfying Salad', icon:'🥗', effect:'hp', value:40, price:80, desc:'Restores 40 HP' },
+  { id:'food3', name:'Teyvat Fried Egg', icon:'🍳', effect:'hp', value:30, price:60, desc:'Restores 30 HP' },
+  { id:'food4', name:'Sticky Honey Roast', icon:'🍖', effect:'hp', value:60, price:120, desc:'Restores 60 HP' },
+  { id:'arti1', name:'Lucky Dog Feather', icon:'🪶', effect:'atk', value:3, price:200, desc:'+3 ATK artifact' },
+  { id:'arti2', name:'Viridescent Venerer', icon:'🍃', effect:'atk', value:5, price:400, desc:'+5 ATK artifact' },
+  { id:'wep1', name:'Swords Iron Sting', icon:'⚔️', effect:'atk', value:4, price:350, desc:'+4 ATK weapon' },
+];
+
+const SCENES = [
+  { title:'Windrise, Mondstadt', art:'🌳', text:'The Great Wind Tree stands tall in the distance. Golden grass sways as you sense hostile movement nearby...', region:0 },
+  { title:'Stormterror\'s Lair', art:'🏰', text:'Crumbling ruins echo with ancient power. Slime colonies have claimed the outer courtyard.', region:0 },
+  { title:'Yaoguang Shoal', art:'🏖', text:'Luminescent jellyfish drift across bioluminescent sands. Treasure Hoarders set up camp at the far end.', region:1 },
+  { title:'Mt. Hulao', art:'⛰', text:'The mountain is bathed in a warm orange glow. Geo Samachurls guard the ancient ruins here.', region:1 },
+  { title:'Tatarasuna', art:'🔧', text:'The smoldering forge lights the night sky. Fatui Skirmishers patrol the perimeter heavily.', region:2 },
+  { title:'Amakane Island', art:'⛩', text:'A sacred island shrouded in violet mist. Ruin Guards patrol with unerring mechanical precision.', region:2 },
+  { title:'Avidya Forest', art:'🌿', text:'Ancient dendro energy hums through the trees. The Abyss has sent its heralds here.', region:3 },
+  { title:'The Chasm', art:'🕳', text:'An abyss of immeasurable depth. The Primo Geovishap stirs in the darkness below...', region:3 },
+];
+
+// ===== GAME STATE =====
+let state = {
+  char: null,
+  hp: 0, maxHp: 0,
+  atk: 0, baseAtk: 0,
+  energy: 0, maxEnergy: 100,
+  mora: 200,
+  exp: 0, level: 1,
+  inventory: [],
+  area: 0,
+  inCombat: false,
+  enemy: null,
+  enemyHp: 0,
+  burnTurns: 0,
+  ozActive: false,
+  burstUsed: false,
+};
+let overlayCallback = null;
+
+// ===== UI HELPERS =====
+function $(id) { return document.getElementById(id); }
+
+function log(msg, cls='') {
+  const box = $('log-box');
+  const div = document.createElement('div');
+  div.className = 'log-entry ' + cls;
+  div.innerHTML = msg;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  while (box.children.length > 60) box.removeChild(box.firstChild);
+}
+
+function showOverlay(icon, title, text, btnLabel, cb) {
+  $('ov-icon').textContent = icon;
+  $('ov-title').textContent = title;
+  $('ov-text').innerHTML = text;
+  $('ov-btn').textContent = btnLabel;
+  overlayCallback = cb;
+  $('overlay').style.display = 'flex';
+}
+function overlayAction() {
+  $('overlay').style.display = 'none';
+  if (overlayCallback) { overlayCallback(); overlayCallback = null; }
+}
+
+function floatDmg(text, color) {
+  const el = document.createElement('div');
+  el.className = 'dmg-float';
+  el.style.color = color;
+  el.textContent = text;
+  // place near enemy
+  const box = $('combat-area');
+  if (box) {
+    const r = box.getBoundingClientRect();
+    el.style.left = (r.left + r.width/2 - 30) + 'px';
+    el.style.top = (r.top + 20) + 'px';
+  } else {
+    el.style.left = '50%'; el.style.top = '40%';
+  }
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+// ===== TITLE -> CHAR SELECT =====
+function showCharSelect() {
+  $('title-screen').style.display = 'none';
+  $('char-select').style.display = 'block';
+  const grid = $('char-grid');
+  grid.innerHTML = '';
+  CHARACTERS.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'char-card';
+    div.innerHTML = `
+      <span class="char-icon">${c.icon}</span>
+      <div class="char-name">${c.name}</div>
+      <span class="element-badge" style="background:rgba(255,255,255,0.1);color:${c.elementColor}">${c.badge}</span>
+      <div class="char-desc">${c.desc}</div>
+      <div style="margin-top:0.5rem;font-size:0.72rem;color:#888">HP ${c.hp} · ATK ${c.atk}</div>
+    `;
+    div.onclick = () => {
+      document.querySelectorAll('.char-card').forEach(x=>x.classList.remove('selected'));
+      div.classList.add('selected');
+      state.charData = c;
+      $('start-btn').disabled = false;
+    };
+    grid.appendChild(div);
+  });
+}
+
+function startGame() {
+  if (!state.charData) return;
+  const c = state.charData;
+  state.char = c;
+  state.hp = c.hp; state.maxHp = c.hp;
+  state.atk = c.atk; state.baseAtk = c.atk;
+  state.energy = 0; state.maxEnergy = c.burstCost;
+  state.mora = 200; state.exp = 0; state.level = 1;
+  state.inventory = [];
+  state.area = 0; state.inCombat = false; state.enemy = null;
+  state.burnTurns = 0; state.ozActive = false; state.burstUsed = false;
+
+  $('char-select').style.display = 'none';
+  $('game-screen').style.display = 'block';
+
+  updateHud();
+  log(`✦ ${c.name} sets forth from Mondstadt! May the Archons guide your path.`, 'log-reward');
+  showExploreScene();
+}
+
+// ===== HUD =====
+function updateHud() {
+  const c = state.char;
+  $('hud-name').textContent = `${c.icon} ${c.name} · Lv.${state.level}`;
+  $('hud-element').textContent = c.icon;
+  $('hp-bar').style.width = Math.max(0, (state.hp / state.maxHp) * 100) + '%';
+  $('hp-text').textContent = `${state.hp}/${state.maxHp}`;
+  $('en-bar').style.width = Math.min(100, (state.energy / state.maxEnergy) * 100) + '%';
+  $('en-text').textContent = `${state.energy}/${state.maxEnergy}`;
+  $('mora-count').textContent = `💰 ${state.mora} Mora`;
+  const region = REGIONS[Math.min(3, Math.floor(state.area / 2))];
+  $('region-label').textContent = region.emoji + ' ' + region.name;
+  $('floor-label').textContent = `Area ${state.area + 1}`;
+  updateInventoryUI();
+}
+
+function updateInventoryUI() {
+  const grid = $('inventory-grid');
+  if (state.inventory.length === 0) {
+    grid.innerHTML = '<div class="inv-item" style="color:#666">Empty</div>'; return;
+  }
+  const counts = {};
+  state.inventory.forEach(id => counts[id] = (counts[id]||0)+1);
+  grid.innerHTML = '';
+  Object.entries(counts).forEach(([id, cnt]) => {
+    const item = ITEMS.find(i=>i.id===id);
+    if (!item) return;
+    const div = document.createElement('div');
+    div.className = 'inv-item';
+    div.innerHTML = `${item.icon} ${item.name}${cnt>1?' ×'+cnt:''}`;
+    if (item.effect === 'hp') {
+      div.title = item.desc;
+      div.style.cursor = 'pointer';
+      div.onclick = () => useItem(id);
+    }
+    grid.appendChild(div);
+  });
+}
+
+// ===== EXPLORE =====
+function showExploreScene() {
+  state.inCombat = false;
+  $('combat-area').style.display = 'none';
+  const sceneData = SCENES[Math.min(state.area, SCENES.length-1)];
+  $('scene-art').textContent = sceneData.art;
+  $('scene-title').textContent = sceneData.title;
+  $('scene-text').innerHTML = `
+    ${sceneData.text}
+    <br><br>The wind carries the scent of adventure. What will you do, <span class="highlight">${state.char.name}</span>?
+  `;
+  $('scene-box').className = 'scene-box fade-in';
+
+  renderActions([
+    { label:'⚔ Seek Battle', icon:'⚔', onClick: startCombat },
+    { label:'🏪 Rest & Shop', icon:'🏪', onClick: openShop },
+    { label:'🗺 Explore', icon:'🗺', onClick: explore },
+    { label:'🍽 Use Item', icon:'🍽', onClick: useFromInventory, disabled: !state.inventory.some(id=>ITEMS.find(i=>i.id===id&&i.effect==='hp')) },
+  ]);
+  updateHud();
+}
+
+function explore() {
+  const roll = Math.random();
+  if (roll < 0.4) {
+    const mora = 20 + Math.floor(Math.random()*60);
+    state.mora += mora;
+    log(`🗺 Explored and found <span class="log-reward">${mora} Mora</span>!`);
+    const scene = SCENES[Math.min(state.area, SCENES.length-1)];
+    $('scene-text').innerHTML = `You carefully search the area and discover a hidden chest. Inside: <span class="reward">${mora} Mora</span>! The chest glows briefly, then settles.`;
+  } else if (roll < 0.7) {
+    const heal = 10 + Math.floor(Math.random()*15);
+    state.hp = Math.min(state.maxHp, state.hp + heal);
+    log(`🌿 Found Jueyun Chili and recovered <span class="log-heal">${heal} HP</span>.`);
+    $('scene-text').innerHTML = `You forage through the undergrowth and find wild Jueyun Chili. Eating it restores <span class="reward">${heal} HP</span>. The spicy warmth spreads through your body.`;
+  } else {
+    state.energy = Math.min(state.maxEnergy, state.energy + 15);
+    log(`✨ Absorbed elemental energy. +15 Energy.`);
+    $('scene-text').innerHTML = `A Seelie drifts past you, trailing elemental residue. You absorb <span class="skill">+15 Energy</span>. Your vision glows brighter.`;
+  }
+  updateHud();
+}
+
+// ===== COMBAT =====
+function startCombat() {
+  // Pick enemy based on area
+  const areaLvl = state.area;
+  let pool = ENEMIES.filter(e=>e.type==='common');
+  if (areaLvl >= 2) pool = pool.concat(ENEMIES.filter(e=>e.type==='elite'));
+  if (areaLvl >= 4) pool = pool.concat(ENEMIES.filter(e=>e.type==='boss').slice(0,1));
+  if (areaLvl >= 6) pool = pool.concat(ENEMIES.filter(e=>e.type==='boss'));
+  const base = pool[Math.floor(Math.random()*pool.length)];
+  const scale = 1 + state.area * 0.15;
+  state.enemy = {
+    ...base,
+    hp: Math.round(base.hp * scale),
+    atk: Math.round(base.atk * scale),
+    mora: Math.round(base.mora * scale),
+    exp: Math.round(base.exp * scale),
+  };
+  state.enemyHp = state.enemy.hp;
+  state.inCombat = true;
+  state.burnTurns = 0;
+  state.burstUsed = false;
+
+  $('combat-area').style.display = 'block';
+  $('enemy-icon').textContent = state.enemy.icon;
+  $('enemy-name').textContent = state.enemy.name + (state.enemy.type==='boss'?' [BOSS]':'');
+  updateEnemyHp();
+
+  const scene = SCENES[Math.min(state.area, SCENES.length-1)];
+  $('scene-title').textContent = `⚔ Battle at ${scene.title}`;
+  $('scene-text').innerHTML = `A wild <span class="enemy">${state.enemy.name}</span> appears! It eyes you with hostility. ${state.enemy.type==='boss'?'<br><br>⚠ This is a powerful boss — fight carefully!':''}`;
+
+  log(`⚔ Encountered <span class="log-dmg">${state.enemy.name}</span>! (HP: ${state.enemyHp})`);
+  renderCombatActions();
+  updateHud();
+}
+
+function updateEnemyHp() {
+  if (!state.enemy) return;
+  const pct = Math.max(0, (state.enemyHp / state.enemy.hp) * 100);
+  $('enemy-hp-bar').style.width = pct + '%';
+  $('enemy-status').textContent = `HP: ${Math.max(0,state.enemyHp)} / ${state.enemy.hp}`;
+}
+
+function renderCombatActions() {
+  const burst = state.energy >= state.maxEnergy;
+  renderActions([
+    { label:'⚔ Normal Attack', sub:'Basic DMG', onClick: () => playerAttack('normal') },
+    { label:`🔮 ${state.char.skill}`, sub:state.char.skillDesc+` (${state.char.skillCost} EN)`, onClick: () => playerAttack('skill'), disabled: state.energy < state.char.skillCost },
+    { label:`💥 ${state.char.burst}`, sub:`Elemental Burst`, onClick: () => playerAttack('burst'), disabled: !burst, cls: burst ? 'primary' : '' },
+    { label:'🍽 Use Item', sub:'Heal or buff', onClick: useFromInventory, disabled: !state.inventory.some(id=>ITEMS.find(i=>i.id===id&&i.effect==='hp')) },
+  ]);
+}
+
+function playerAttack(type) {
+  if (!state.inCombat) return;
+  let dmg = 0, logMsg = '';
+  const c = state.char;
+
+  if (type === 'normal') {
+    dmg = state.atk + Math.floor(Math.random()*8) - 2;
+    dmg = Math.max(1, dmg);
+    state.energy = Math.min(state.maxEnergy, state.energy + 12);
+    logMsg = `⚔ Normal attack deals <span class="log-dmg">${dmg} DMG</span>. (+12 Energy)`;
+    floatDmg('-'+dmg, '#ff8a65');
+
+  } else if (type === 'skill') {
+    if (state.energy < c.skillCost) return;
+    state.energy -= c.skillCost;
+    dmg = Math.round(state.atk * 1.8) + Math.floor(Math.random()*12);
+
+    if (c.special === 'burn') {
+      state.burnTurns = 3;
+      logMsg = `🔥 <span class="log-skill">${c.skill}</span> deals <span class="log-dmg">${dmg} Pyro DMG</span> + Burn (3 turns)!`;
+    } else if (c.special === 'freeze') {
+      dmg = Math.round(dmg * 1.3);
+      logMsg = `❄ <span class="log-skill">${c.skill}</span> deals <span class="log-dmg">${dmg} Cryo DMG</span> and freezes enemy!`;
+    } else if (c.special === 'chain') {
+      const bonus = Math.floor(dmg * 0.3);
+      logMsg = `⚡ <span class="log-skill">${c.skill}</span> deals <span class="log-dmg">${dmg}+${bonus} Electro chain DMG</span>!`;
+      dmg += bonus;
+    } else if (c.special === 'oz') {
+      state.ozActive = true;
+      logMsg = `🔮 <span class="log-skill">${c.skill}</span>: Oz joins the battle! <span class="log-dmg">${dmg} DMG</span> + ongoing Electro!`;
+    } else {
+      logMsg = `💨 <span class="log-skill">${c.skill}</span> deals <span class="log-dmg">${dmg} DMG</span>!`;
+    }
+    floatDmg('-'+dmg, '#4fc3f7');
+    state.energy = Math.min(state.maxEnergy, state.energy + 8);
+
+  } else if (type === 'burst') {
+    if (state.energy < state.maxEnergy) return;
+    dmg = Math.round(state.atk * 3.5) + Math.floor(Math.random()*20);
+    state.energy = 0;
+    state.burstUsed = true;
+    logMsg = `💥 <span class="log-skill">${c.burst}</span> UNLEASHED! <span class="log-dmg">${dmg} MASSIVE DMG</span>!`;
+    floatDmg('💥 '+dmg, '#ffd54f');
+  }
+
+  state.enemyHp -= dmg;
+  log(logMsg, 'log-dmg');
+  updateEnemyHp();
+  $('scene-text').innerHTML = `<span class="skill">${c.name}</span> attacks the <span class="enemy">${state.enemy.name}</span>. The battle is fierce!`;
+
+  if (state.enemyHp <= 0) { enemyDefeated(); return; }
+
+  // Burn DoT
+  if (state.burnTurns > 0) {
+    const dot = Math.round(state.atk * 0.5);
+    state.enemyHp -= dot;
+    state.burnTurns--;
+    log(`🔥 Burn: <span class="log-dmg">-${dot} DMG</span> (${state.burnTurns} turns left)`);
+    updateEnemyHp();
+    if (state.enemyHp <= 0) { enemyDefeated(); return; }
+  }
+
+  // Oz bonus
+  if (state.ozActive) {
+    const ozDmg = Math.floor(state.atk * 0.6);
+    state.enemyHp -= ozDmg;
+    log(`🔮 Oz attacks for <span class="log-dmg">${ozDmg} Electro DMG</span>!`);
+    updateEnemyHp();
+    if (state.enemyHp <= 0) { enemyDefeated(); return; }
+  }
+
+  // Enemy shield mechanic
+  if (state.enemy.special === 'shield' && state.enemyHp < state.enemy.hp * 0.5 && !state.enemy.shielded) {
+    state.enemy.shielded = true;
+    log(`🛡 ${state.enemy.name} activates Cryo Shield! Reduced incoming damage.`);
+  }
+
+  enemyAttack();
+}
+
+function enemyAttack() {
+  if (!state.inCombat) return;
+  let dmg = state.enemy.atk + Math.floor(Math.random()*10) - 4;
+  if (state.enemy.shielded) dmg = Math.round(dmg * 0.7);
+  dmg = Math.max(1, dmg);
+
+  // Curse debuff
+  if (state.enemy.special === 'curse') {
+    state.maxHp = Math.max(50, state.maxHp - 2);
+  }
+  // Samachurl self-heal
+  if (state.enemy.special === 'heal' && Math.random() < 0.3) {
+    const heal = Math.floor(state.enemy.hp * 0.08);
+    state.enemyHp = Math.min(state.enemy.hp, state.enemyHp + heal);
+    log(`🌿 ${state.enemy.name} uses Dendro Heal! +${heal} HP`);
+    updateEnemyHp();
+  }
+
+  state.hp -= dmg;
+  floatDmg('HP -'+dmg, '#f87171');
+  log(`👺 <span class="log-dmg">${state.enemy.name} attacks for ${dmg} DMG!</span>`);
+  updateHud();
+
+  if (state.hp <= 0) { playerDefeated(); return; }
+  renderCombatActions();
+}
+
+function enemyDefeated() {
+  state.inCombat = false;
+  state.enemy.shielded = false;
+  state.ozActive = false;
+  const e = state.enemy;
+  state.mora += e.mora;
+  state.exp += e.exp;
+  // Level up
+  const expNeeded = state.level * 50;
+  if (state.exp >= expNeeded) {
+    state.exp -= expNeeded;
+    state.level++;
+    state.maxHp += 10;
+    state.hp = Math.min(state.maxHp, state.hp + 15);
+    state.atk += 2;
+    log(`⭐ LEVEL UP! Now Lv.${state.level}. HP+10, ATK+2`, 'log-reward');
+  }
+  state.energy = Math.min(state.maxEnergy, state.energy + 20);
+  state.area++;
+
+  $('combat-area').style.display = 'none';
+  $('scene-text').innerHTML = `<span class="reward">Victory!</span> The <span class="enemy">${e.name}</span> falls! You gain <span class="reward">${e.mora} Mora</span> and <span class="reward">${e.exp} EXP</span>.`;
+  log(`✦ <span class="log-reward">Victory! +${e.mora} Mora, +${e.exp} EXP</span>`, 'log-reward');
+  updateHud();
+
+  if (state.area >= SCENES.length && state.level >= 6) {
+    // Final victory condition
+    showOverlay('🏆','Archon Defeated!',`You have conquered all of Teyvat! The seven Archons bow before your strength.<br><br>Final: Lv.${state.level} · ${state.mora} Mora · ${state.area} areas cleared.`,'Claim Glory 🌟', () => {
+      log('🌟 THE ADVENTURE IS COMPLETE! Thank you for playing.', 'log-reward');
+      showExploreScene();
+    });
+  } else {
+    showOverlay('⭐','Enemy Defeated!',`+${e.mora} Mora · +${e.exp} EXP${state.level>1?' · Lv.'+state.level+' Reached!':''}.<br>The path ahead opens. <br>Area ${state.area+1} of ${SCENES.length}.`,'Press On →', showExploreScene);
+  }
+}
+
+function playerDefeated() {
+  state.inCombat = false;
+  state.hp = 0;
+  log(`💀 ${state.char.name} has fallen...`, 'log-dmg');
+  showOverlay('💀','Fallen in Battle',`${state.char.name} has been defeated by the <strong>${state.enemy.name}</strong>.<br><br>The Statue of the Seven restores you to life. You lose some Mora but press on.`,'Revive ✦', () => {
+    state.hp = Math.floor(state.maxHp * 0.5);
+    state.mora = Math.max(0, state.mora - 100);
+    state.enemy = null;
+    $('combat-area').style.display = 'none';
+    log('✦ Revived by the Statue of Seven. (-100 Mora)', 'log-heal');
+    updateHud();
+    showExploreScene();
+  });
+}
+
+// ===== SHOP =====
+function openShop() {
+  $('combat-area').style.display = 'none';
+  $('scene-art').textContent = '🏪';
+  $('scene-title').textContent = 'Mond Marketplace';
+  $('scene-text').innerHTML = `Marjorie smiles warmly. <span class="highlight">"Welcome, Traveler! What can I get for you?"</span><br><br>Your Mora: <span class="highlight">${state.mora}</span>`;
+
+  const shopItems = ITEMS.filter(i => {
+    if (i.effect === 'atk') return !state.inventory.includes(i.id);
+    return true;
+  }).slice(0, 5);
+
+  const grid = document.createElement('div');
+  grid.className = 'shop-grid';
+  shopItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    const canAfford = state.mora >= item.price;
+    if (!canAfford) div.style.opacity = '0.5';
+    div.innerHTML = `<div style="font-size:1.6rem">${item.icon}</div><div style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--white)">${item.name}</div><div style="font-size:0.75rem;color:#aaa;margin-top:3px">${item.desc}</div><div class="shop-price">💰 ${item.price} Mora</div>`;
+    if (canAfford) {
+      div.onclick = () => buyItem(item);
+    }
+    grid.appendChild(div);
+  });
+
+  $('scene-text').innerHTML = `Marjorie smiles warmly. <span class="highlight">"Welcome, Traveler!"</span><br>Your Mora: <span class="highlight">${state.mora}</span>`;
+  $('scene-box').appendChild(grid);
+
+  renderActions([
+    { label:'🚶 Leave Shop', onClick: () => { grid.remove(); showExploreScene(); } },
+  ]);
+}
+
+function buyItem(item) {
+  if (state.mora < item.price) { log('Not enough Mora!'); return; }
+  state.mora -= item.price;
+  if (item.effect === 'hp') {
+    state.inventory.push(item.id);
+    log(`🛒 Bought ${item.icon} ${item.name} for ${item.price} Mora.`, 'log-reward');
+  } else if (item.effect === 'atk') {
+    state.atk += item.value;
+    log(`⚔ Equipped ${item.icon} ${item.name}! +${item.value} ATK`, 'log-reward');
+  }
+  updateHud();
+  openShop();
+}
+
+function useItem(itemId) {
+  const idx = state.inventory.indexOf(itemId);
+  if (idx === -1) return;
+  const item = ITEMS.find(i=>i.id===itemId);
+  if (!item || item.effect !== 'hp') return;
+  state.inventory.splice(idx, 1);
+  state.hp = Math.min(state.maxHp, state.hp + item.value);
+  log(`🍽 Used ${item.icon} ${item.name}. <span class="log-heal">+${item.value} HP</span>`, 'log-heal');
+  updateHud();
+  if (state.inCombat) renderCombatActions();
+  else showExploreScene();
+}
+
+function useFromInventory() {
+  const healItems = state.inventory.filter(id=>ITEMS.find(i=>i.id===id&&i.effect==='hp'));
+  if (healItems.length === 0) { log('No healing items!'); return; }
+  useItem(healItems[0]);
+}
+
+// ===== RENDER ACTIONS =====
+function renderActions(actions) {
+  const grid = $('action-grid');
+  grid.innerHTML = '';
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'btn ' + (a.cls||'') + (a.disabled?' disabled':'');
+    btn.innerHTML = `<span class="btn-icon">${a.icon||''}</span>${a.label}${a.sub?`<span class="btn-cost">${a.sub}</span>`:''}`;
+    if (!a.disabled && a.onClick) btn.onclick = a.onClick;
+    grid.appendChild(btn);
+  });
+}
+
+// Init
+$('title-screen').style.display = 'flex';
+</script>
+</body>
+</html>
